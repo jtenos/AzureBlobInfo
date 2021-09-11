@@ -2,3 +2,5 @@ secrets.json
 bin
 obj
 .vscode
+.vs
+*.csv

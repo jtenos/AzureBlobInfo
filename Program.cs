@@ -26,6 +26,7 @@ void ShowAllBlobs(StorageAccount account, Container container)
     BlobContainerClient containerClient = new(account.ConnectionString, container.Name);
 
     List<BlobCsvRecord> blobCsvRecords = new();
+    List<BasicBlobCsvRecord> basicCsvRecords = new();
 
     foreach (BlobItem blob in containerClient.GetBlobs().OrderBy(x => x.Name))
     {
@@ -36,13 +37,26 @@ void ShowAllBlobs(StorageAccount account, Container container)
             Size = blob.Properties.ContentLength ?? -1,
             UploadDate = blob.Properties.CreatedOn?.LocalDateTime ?? default
         });
+        basicCsvRecords.Add(new()
+        {
+            Name = blob.Name,
+            Size = blob.Properties.ContentLength ?? -1
+        });
     }
 
     using (StreamWriter writer = new("blobs.csv"))
-    using (CsvWriter csv = new(writer, CultureInfo.InvariantCulture))
     {
+        using CsvWriter csv = new(writer, CultureInfo.CurrentCulture);
         csv.WriteRecords(blobCsvRecords);
     }
+
+    using (StreamWriter basicWriter = new("blobs-basic.csv"))
+    {
+        using CsvWriter csvBasic = new(basicWriter, CultureInfo.CurrentCulture);
+        csvBasic.WriteRecords(basicCsvRecords);
+    }
+
+    Console.WriteLine("Done");
 }
 
 class BlobCsvRecord
@@ -61,5 +75,20 @@ class BlobCsvRecordMap : ClassMap<BlobCsvRecord>
         Map(x => x.StorageClass);
         Map(x => x.Size);
         Map(x => x.UploadDate);
+    }
+}
+
+class BasicBlobCsvRecord
+{
+    public string Name { get; set; } = default!;
+    public long Size { get; set; }
+}
+
+class BasicBlobCsvRecordMap : ClassMap<BlobCsvRecord>
+{
+    public BasicBlobCsvRecordMap()
+    {
+        Map(x => x.Name);
+        Map(x => x.Size);
     }
 }
